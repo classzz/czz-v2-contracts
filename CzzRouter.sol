@@ -1,4 +1,3 @@
-
 pragma solidity =0.6.6;
 
 import './IERC20.sol';
@@ -113,9 +112,9 @@ contract CzzRouter is Ownable {
         _;
     }
 
-    constructor(address _token) public {
+    constructor(address _token, uint _netype) public {
         czzToken = _token;
-        minSignatures = MIN_SIGNATURES;
+        _ntype = _netype;
     }
     
     receive() external payable {}
@@ -139,7 +138,15 @@ contract CzzRouter is Ownable {
     function HasRegistedRouteraddress(address routerAddr) public view isManager returns(uint8 ){
         return routerAddrs[routerAddr];
     }
-   
+    
+    function setCzzTonkenAddress(address addr) public isManager {
+        czzToken = addr;
+    }
+
+    function getCzzTonkenAddress() public view isManager returns(address ){
+        return czzToken;
+    }
+
     function approve(address token, address spender, uint256 _amount) public virtual returns (bool) {
         require(address(token) != address(0), "approve token is the zero address");
         require(address(spender) != address(0), "approve spender is the zero address");
@@ -150,8 +157,8 @@ contract CzzRouter is Ownable {
     }
     
     function _swapMint(
-        uint amountIn,
-        uint amountOutMin,
+        uint256 amountIn,
+        uint256 amountOutMin,
         address[] memory path,
         address to,
         address routerAddr,
@@ -166,8 +173,8 @@ contract CzzRouter is Ownable {
     }
 
     function _swapBurn(
-        uint amountIn,
-        uint amountOutMin,
+        uint256 amountIn,
+        uint256 amountOutMin,
         address[] memory path,
         address to,
         address routerAddr,
@@ -182,7 +189,7 @@ contract CzzRouter is Ownable {
     }
 
     function _swapEthBurn(
-        uint amountInMin,
+        uint256 amountInMin,
         address[] memory path,
         address to, 
         address routerAddr,
@@ -197,8 +204,8 @@ contract CzzRouter is Ownable {
     }
     
     function _swapEthMint(
-        uint amountIn,
-        uint amountOutMin,
+        uint256 amountIn,
+        uint256 amountOutMin,
         address[] memory path,
         address to, 
         address routerAddr,
@@ -217,61 +224,25 @@ contract CzzRouter is Ownable {
         return  ISwapFactory(factory).getReserves(tokenA, tokenB);
     }
     
-    function swapGetAmount(uint amountIn, address[] memory path,address routerAddr) public view returns (uint[] memory amounts){
+    function swapGetAmount(uint256 amountIn, address[] memory path, address routerAddr) public view returns (uint[] memory amounts){
         require(address(0) != routerAddr); 
         return IUniswapV2Router02(routerAddr).getAmountsOut(amountIn,path);
     }
-    
-    function swapAndMintTokenWithPath(address _to, uint _amountIn, uint _amountInMin, uint256 mid, uint256 gas, address routerAddr, address[] memory userPath, uint deadline) payable public isManager {
-        require(address(0) != _to);
-        require(address(0) != routerAddr); 
-        require(_amountIn > 0);
-        require(_amountIn > gas, "ROUTER: transfer amount exceeds gas");
-        require(userPath[0] == czzToken, "userPath 0 is not czz");
-
-        ICzzSwap(czzToken).mint(address(this), _amountIn);    // mint to contract address   
-        uint[] memory amounts = swapGetAmount(_amountIn, userPath, routerAddr);
-        if(gas > 0){
-            bool success = true;
-            (success) = ICzzSwap(czzToken).transfer(msg.sender, gas); 
-            require(success, 'swapAndMintTokenWithPath gas Transfer error');
-        }
-        _swapMint(_amountIn-gas, _amountInMin, userPath, _to, routerAddr, deadline);
-        emit MintToken(_to, amounts[amounts.length - 1], mid, _amountIn);
-    }
-    
-    function swapAndMintTokenForEthWithPath(address _to, uint _amountIn, uint _amountInMin, uint256 mid, uint256 gas, address routerAddr, address[] memory userPath, uint deadline) payable public isManager {
-        require(address(0) != _to);
-        require(address(0) != routerAddr); 
-        require(_amountIn > 0);
-        require(_amountIn > gas, "ROUTER: transfer amount exceeds gas");
-        require(path[0] == czzToken, "path 0 is not czz");
-
-        ICzzSwap(czzToken).mint(address(this), _amountIn);    // mint to contract address   
-        uint[] memory amounts = swapGetAmount(_amountIn, path, routerAddr);
-        if(gas > 0){
-            bool success = true;
-            (success) = ICzzSwap(czzToken).transfer(msg.sender, gas); 
-            require(success, 'swapAndMintTokenForEthWithPath gas Transfer error');
-        }
-        _swapEthMint(_amountIn - gas, _amountInMin, userPath, _to, routerAddr, deadline);
-        emit MintToken(_to, amounts[amounts.length - 1], mid, _amountIn);
-    }
-    
-    function swapAndBurnWithPath(uint _amountIn, uint _amountInMin, uint256 ntype, address routerAddr, address[] memory path, uint deadline, address[] memory toPath, bytes extradata) payable public
+ 
+    function swapAndBurnWithPath(uint256 _amountIn, uint256 _amountInMin, uint ntype, address routerAddr, address[] memory fromPath, uint deadline, address[] memory toPath, bytes memory extradata) payable public
     {
         require(address(0) != routerAddr); 
-        require(path[path.length - 1] == czzToken, "last path is not czz"); 
+        require(fromPath[fromPath.length - 1] == czzToken, "last fromPath is not czz"); 
 
-        uint[] memory amounts = swapGetAmount(_amountIn, path, routerAddr);
-        _swapBurn(_amountIn, _amountOutMin, path, msg.sender, routerAddr, deadline);
+        uint[] memory amounts = swapGetAmount(_amountIn, fromPath, routerAddr);
+        _swapBurn(_amountIn, _amountInMin, fromPath, msg.sender, routerAddr, deadline);
         if(ntype != _ntype){
             ICzzSwap(czzToken).burn(msg.sender, amounts[amounts.length - 1]);
-            emit BurnToken(msg.sender, amounts[amounts.length - 1], ntype, toToken, toPath, extradata);
+            emit BurnToken(msg.sender, amounts[amounts.length - 1], ntype, toPath, extradata);
         }
     }
     
-    function swapAndBurnEthWithPath(uint _amountInMin, uint256 ntype, address routerAddr, address[] memory path, uint deadline, address[] memory toPath, bytes extradata) payable public
+    function swapAndBurnEthWithPath(uint256 _amountInMin, uint ntype, address routerAddr, address[] memory path, uint deadline, address[] memory toPath, bytes memory extradata) payable public
     {
         require(address(0) != routerAddr); 
         require(path[path.length - 1] == czzToken, "last path is not czz"); 
@@ -280,30 +251,50 @@ contract CzzRouter is Ownable {
         _swapEthBurn(_amountInMin, path, msg.sender, routerAddr, deadline);
         if(ntype != _ntype){
             ICzzSwap(czzToken).burn(msg.sender, amounts[amounts.length - 1]);
-            emit BurnToken(msg.sender, amounts[amounts.length - 1], ntype, toToken, toPath, extradata);
+            emit BurnToken(msg.sender, amounts[amounts.length - 1], ntype, toPath, extradata);
         }
     }
     
-    function setMinSignatures(uint8 value) public isManager {
-        minSignatures = value;
-    }
-
-    function getMinSignatures() public view isManager returns(uint256){
-        return minSignatures;
-    }
-
-    function setCzzTonkenAddress(address addr) public isManager {
-        czzToken = addr;
-    }
-
-    function getCzzTonkenAddress() public view isManager returns(address ){
-        return czzToken;
-    }
-
-    function burn( uint _amountIn, uint256 ntype, string memory toToken) payable public 
+    function burn(uint256 _amountIn, uint ntype, address[] memory toPath, bytes memory extradata) payable public 
     {
         ICzzSwap(czzToken).burn(msg.sender, _amountIn);
-        emit BurnToken(msg.sender, _amountIn, ntype, toToken);
+        emit BurnToken(msg.sender, _amountIn, ntype, toPath, extradata);
+    }
+    
+    function swapAndMintTokenWithPath(address _to, uint256 _amountIn, uint256 _amountInMin, uint256 mid, uint256 gas, address routerAddr, address[] memory toPath, uint deadline) payable public isManager {
+        require(address(0) != _to);
+        require(address(0) != routerAddr); 
+        require(_amountIn > 0);
+        require(_amountIn > gas, "ROUTER: transfer amount exceeds gas");
+        require(toPath[0] == czzToken, "toPath 0 is not czz");
+
+        ICzzSwap(czzToken).mint(address(this), _amountIn);    // mint to contract address   
+        uint[] memory amounts = swapGetAmount(_amountIn, toPath, routerAddr);
+        if(gas > 0){
+            bool success = true;
+            (success) = ICzzSwap(czzToken).transfer(msg.sender, gas); 
+            require(success, 'swapAndMintTokenWithPath gas Transfer error');
+        }
+        _swapMint(_amountIn-gas, _amountInMin, toPath, _to, routerAddr, deadline);
+        emit MintToken(_to, amounts[amounts.length - 1], mid, _amountIn);
+    }
+    
+    function swapAndMintTokenForEthWithPath(address _to, uint256 _amountIn, uint256 _amountInMin, uint256 mid, uint256 gas, address routerAddr, address[] memory toPath, uint deadline) payable public isManager {
+        require(address(0) != _to);
+        require(address(0) != routerAddr); 
+        require(_amountIn > 0);
+        require(_amountIn > gas, "ROUTER: transfer amount exceeds gas");
+        require(toPath[0] == czzToken, "path 0 is not czz");
+
+        ICzzSwap(czzToken).mint(address(this), _amountIn);    // mint to contract address   
+        uint[] memory amounts = swapGetAmount(_amountIn, toPath, routerAddr);
+        if(gas > 0){
+            bool success = true;
+            (success) = ICzzSwap(czzToken).transfer(msg.sender, gas); 
+            require(success, 'swapAndMintTokenForEthWithPath gas Transfer error');
+        }
+        _swapEthMint(_amountIn - gas, _amountInMin, toPath, _to, routerAddr, deadline);
+        emit MintToken(_to, amounts[amounts.length - 1], mid, _amountIn);
     }
     
     function mintWithGas(uint256 mid, address _to, uint256 _amountIn, uint256 gas, address routerAddr)  payable public isManager 
@@ -312,13 +303,10 @@ contract CzzRouter is Ownable {
         require(_amountIn > 0);
         require(_amountIn >= gas, "ROUTER: transfer amount exceeds gas");
 
-        bool success = true;   
         if(gas > 0){
-           (success) = ICzzSwap(czzToken).mint(msg.sender, gas);
-            require(success, 'mintWithGas gas Transfer error');
+           ICzzSwap(czzToken).mint(msg.sender, gas);
         }
-        (success) = ICzzSwap(czzToken).mint(_to, _amountIn-gas);
-        require(success, 'mintWithGas amountIn Transfer error');
+        ICzzSwap(czzToken).mint(_to, _amountIn-gas);
         emit MintToken(_to, _amountIn-gas, mid,_amountIn);
     }
 
@@ -327,6 +315,7 @@ contract CzzRouter is Ownable {
         ICzzSwap(czzToken).mint(_to, _amountIn);
         emit MintToken(_to, 0, mid,_amountIn);
     }
+
 }
 
 // helper methods for interacting with ERC20 tokens and sending ETH that do not consistently return true/false
