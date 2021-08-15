@@ -93,6 +93,7 @@ contract CzzRouter is Ownable {
         uint256     amount,
         uint256     ntype,
         address[]   toPath,
+        address     toRouterAddr,
         bytes       Extra
     );
     event SwapToken(
@@ -229,7 +230,7 @@ contract CzzRouter is Ownable {
         return IUniswapV2Router02(routerAddr).getAmountsOut(amountIn,path);
     }
  
-    function swapAndBurnWithPath(uint256 _amountIn, uint256 _amountInMin, uint ntype, address routerAddr, address[] memory fromPath, uint deadline, address[] memory toPath, bytes memory extradata) payable public
+    function swapAndBurnWithPath(uint256 _amountIn, uint256 _amountInMin, uint ntype, address routerAddr, address[] memory fromPath, uint deadline, address[] memory toPath, address toRouterAddr, bytes memory extradata) payable public
     {
         require(address(0) != routerAddr); 
         require(fromPath[fromPath.length - 1] == czzToken, "last fromPath is not czz"); 
@@ -238,11 +239,11 @@ contract CzzRouter is Ownable {
         _swapBurn(_amountIn, _amountInMin, fromPath, msg.sender, routerAddr, deadline);
         if(ntype != _ntype){
             ICzzSwap(czzToken).burn(msg.sender, amounts[amounts.length - 1]);
-            emit BurnToken(msg.sender, amounts[amounts.length - 1], ntype, toPath, extradata);
+            emit BurnToken(msg.sender, amounts[amounts.length - 1], ntype, toPath, toRouterAddr, extradata);
         }
     }
     
-    function swapAndBurnEthWithPath(uint256 _amountInMin, uint ntype, address routerAddr, address[] memory path, uint deadline, address[] memory toPath, bytes memory extradata) payable public
+    function swapAndBurnEthWithPath(uint256 _amountInMin, uint ntype, address routerAddr, address[] memory path, uint deadline, address[] memory toPath, address toRouterAddr, bytes memory extradata) payable public
     {
         require(address(0) != routerAddr); 
         require(path[path.length - 1] == czzToken, "last path is not czz"); 
@@ -251,14 +252,14 @@ contract CzzRouter is Ownable {
         _swapEthBurn(_amountInMin, path, msg.sender, routerAddr, deadline);
         if(ntype != _ntype){
             ICzzSwap(czzToken).burn(msg.sender, amounts[amounts.length - 1]);
-            emit BurnToken(msg.sender, amounts[amounts.length - 1], ntype, toPath, extradata);
+            emit BurnToken(msg.sender, amounts[amounts.length - 1], ntype, toPath, toRouterAddr, extradata);
         }
     }
     
-    function burn(uint256 _amountIn, uint ntype, address[] memory toPath, bytes memory extradata) payable public 
+    function burn(uint256 _amountIn, uint ntype, address[] memory toPath, address toRouterAddr,bytes memory extradata) payable public 
     {
         ICzzSwap(czzToken).burn(msg.sender, _amountIn);
-        emit BurnToken(msg.sender, _amountIn, ntype, toPath, extradata);
+        emit BurnToken(msg.sender, _amountIn, ntype, toPath, toRouterAddr, extradata);
     }
     
     function swapAndMintTokenWithPath(address _to, uint256 _amountIn, uint256 _amountInMin, uint256 mid, uint256 gas, address routerAddr, address[] memory toPath, uint deadline) payable public isManager {
@@ -297,9 +298,8 @@ contract CzzRouter is Ownable {
         emit MintToken(_to, amounts[amounts.length - 1], mid, _amountIn);
     }
     
-    function mintWithGas(uint256 mid, address _to, uint256 _amountIn, uint256 gas, address routerAddr)  payable public isManager 
+    function mintWithGas(uint256 mid, address _to, uint256 _amountIn, uint256 gas)  payable public isManager 
     {
-        require(address(0) != routerAddr); 
         require(_amountIn > 0);
         require(_amountIn >= gas, "ROUTER: transfer amount exceeds gas");
 
@@ -307,13 +307,13 @@ contract CzzRouter is Ownable {
            ICzzSwap(czzToken).mint(msg.sender, gas);
         }
         ICzzSwap(czzToken).mint(_to, _amountIn-gas);
-        emit MintToken(_to, _amountIn-gas, mid,_amountIn);
+        emit MintToken(_to, _amountIn-gas, mid, _amountIn);
     }
 
     function mint(uint256 mid, address _to, uint256 _amountIn)  payable public isManager 
     {
         ICzzSwap(czzToken).mint(_to, _amountIn);
-        emit MintToken(_to, 0, mid,_amountIn);
+        emit MintToken(_to, 0, mid, _amountIn);
     }
 
 }
