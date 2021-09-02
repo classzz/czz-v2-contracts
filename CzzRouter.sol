@@ -83,18 +83,23 @@ contract CzzRouter is Ownable {
     mapping (address => uint8) private routerAddrs;
 
     event MintToken(
-        address indexed to,
-        uint256 amount,
+        address to,
         uint256 mid,
-        uint256 amountIn
+        uint256 gas,
+        uint256 amountIn,
+        uint256 amountOut
     );
+
     event BurnToken(
-        address     indexed to,
-        uint256     amount,
-        uint256     ntype,
+        address     from_,
+        uint256     amountIn,
+        uint256     amountOut,
+        uint256     convertType,
         address[]   toPath,
+        bool        IsInsurance,
         bytes       Extra
     );
+
     event SwapToken(
         address indexed to,
         uint256 inAmount,
@@ -242,7 +247,7 @@ contract CzzRouter is Ownable {
         }
     }
     
-    function swapAndBurnEthWithPath(uint256 _amountInMin, uint ntype, address routerAddr, address[] memory path, uint deadline, address[] memory toPath, bytes memory extradata) payable public
+    function swapAndBurnEthWithPath(uint256 _amountInMin, uint convertType, address routerAddr, address[] memory path, uint deadline, address[] memory toPath, bytes memory extradata) payable public
     {
         require(address(0) != routerAddr); 
         require(path[path.length - 1] == czzToken, "last path is not czz"); 
@@ -251,7 +256,7 @@ contract CzzRouter is Ownable {
         _swapEthBurn(_amountInMin, path, msg.sender, routerAddr, deadline);
         if(ntype != _ntype){
             ICzzSwap(czzToken).burn(msg.sender, amounts[amounts.length - 1]);
-            emit BurnToken(msg.sender, amounts[amounts.length - 1], ntype, toPath, extradata);
+            emit BurnToken(msg.sender, amounts[amounts.length - 1], convertType, toPath, extradata);
         }
     }
     
@@ -313,7 +318,7 @@ contract CzzRouter is Ownable {
     function mint(uint256 mid, address _to, uint256 _amountIn)  payable public isManager 
     {
         ICzzSwap(czzToken).mint(_to, _amountIn);
-        emit MintToken(_to, 0, mid,_amountIn);
+        emit MintToken(_to, mid, _amountIn, 0);
     }
 
 }
