@@ -96,6 +96,7 @@ contract CzzRouter is Ownable {
         uint256     amountOut,
         uint256     convertType,
         address[]   toPath,
+        address     toRouterAddr,
         bool        IsInsurance,
         bytes       Extra
     );
@@ -168,13 +169,12 @@ contract CzzRouter is Ownable {
         address to,
         address routerAddr,
         uint deadline
-        ) internal {
+        ) internal returns (uint[] memory amounts) {
         uint256 _amount = IERC20(path[0]).allowance(address(this),routerAddr);
         if(_amount < amountIn) {
             approve(path[0], routerAddr,uint256(-1));
         }
-        IUniswapV2Router02(routerAddr).swapExactTokensForTokens(amountIn, amountOutMin,path,to,deadline);
-
+       amounts = IUniswapV2Router02(routerAddr).swapExactTokensForTokens(amountIn, amountOutMin,path,to,deadline);
     }
 
     function _swapBurn(
@@ -184,13 +184,13 @@ contract CzzRouter is Ownable {
         address to,
         address routerAddr,
         uint deadline
-        ) internal {
+        ) internal returns (uint[] memory amounts) {
         uint256 _amount = IERC20(path[0]).allowance(address(this),routerAddr);
         if(_amount < amountIn) {
             approve(path[0], routerAddr,uint256(-1));
         }
         TransferHelper.safeTransferFrom(path[0], msg.sender, address(this), amountIn);
-        IUniswapV2Router02(routerAddr).swapExactTokensForTokens(amountIn, amountOutMin,path,to,deadline);
+        amounts = IUniswapV2Router02(routerAddr).swapExactTokensForTokens(amountIn, amountOutMin,path,to,deadline);
     }
 
     function _swapEthBurn(
@@ -199,13 +199,13 @@ contract CzzRouter is Ownable {
         address to, 
         address routerAddr,
         uint deadline
-        ) internal {
+        ) internal returns (uint[] memory amounts) {
         uint256 _amount = IERC20(path[0]).allowance(address(this),routerAddr);
         if(_amount < msg.value) {
             approve(path[0], routerAddr,uint256(-1));
         }
         IWETH(path[0]).deposit{value: msg.value}();
-        IUniswapV2Router02(routerAddr).swapExactTokensForTokens(msg.value,amountInMin,path,to,deadline);
+        amounts = IUniswapV2Router02(routerAddr).swapExactTokensForTokens(msg.value,amountInMin,path,to,deadline);
     }
     
     function _swapEthMint(
@@ -215,13 +215,13 @@ contract CzzRouter is Ownable {
         address to, 
         address routerAddr,
         uint deadline
-        ) internal {
+        ) internal returns (uint[] memory amounts) {
       
         uint256 _amount = IERC20(path[0]).allowance(address(this),routerAddr);
         if(_amount < amountIn) {
             approve(path[0], routerAddr,uint256(-1));
         }
-        IUniswapV2Router02(routerAddr).swapExactTokensForETH(amountIn, amountOutMin,path,to,deadline);
+        amounts = IUniswapV2Router02(routerAddr).swapExactTokensForETH(amountIn, amountOutMin,path,to,deadline);
     }
     
     function swap_burn_get_getReserves(address factory, address tokenA, address tokenB) public view isManager returns (uint reserveA, uint reserveB){
@@ -234,36 +234,37 @@ contract CzzRouter is Ownable {
         return IUniswapV2Router02(routerAddr).getAmountsOut(amountIn,path);
     }
  
-    function swapAndBurnWithPath(uint256 _amountIn, uint256 _amountInMin, uint ntype, address routerAddr, address[] memory fromPath, uint deadline, address[] memory toPath, bytes memory extradata) payable public
+    function swapAndBurnWithPath(uint256 _amountIn, uint256 _amountInMin, uint ntype, address routerAddr, address[] memory fromPath, uint deadline, address[] memory toPath, address toRouterAddr, bytes memory extradata) payable public
     {
         require(address(0) != routerAddr); 
         require(fromPath[fromPath.length - 1] == czzToken, "last fromPath is not czz"); 
 
-        uint[] memory amounts = swapGetAmount(_amountIn, fromPath, routerAddr);
-        _swapBurn(_amountIn, _amountInMin, fromPath, msg.sender, routerAddr, deadline);
+        uint[] memory amounts = _swapBurn(_amountIn, _amountInMin, fromPath, msg.sender, routerAddr, deadline);
         if(ntype != _ntype){
             ICzzSwap(czzToken).burn(msg.sender, amounts[amounts.length - 1]);
-            emit BurnToken(msg.sender, amounts[amounts.length - 1], ntype, toPath, extradata);
+            emit BurnToken(msg.sender, amounts[amounts.length - 1], ntype, toPath, toRouterAddr, extradata);
         }
     }
     
+
     function swapAndBurnEthWithPath(uint256 _amountInMin, uint convertType, address routerAddr, address[] memory path, uint deadline, address[] memory toPath, bytes memory extradata) payable public
     {
         require(address(0) != routerAddr); 
         require(path[path.length - 1] == czzToken, "last path is not czz"); 
         require(msg.value > 0);
-        uint[] memory amounts = swapGetAmount(msg.value, path, routerAddr);
-        _swapEthBurn(_amountInMin, path, msg.sender, routerAddr, deadline);
+        uint[] memory amounts = _swapEthBurn(_amountInMin, path, msg.sender, routerAddr, deadline);
         if(ntype != _ntype){
             ICzzSwap(czzToken).burn(msg.sender, amounts[amounts.length - 1]);
+
             emit BurnToken(msg.sender, amounts[amounts.length - 1], convertType, toPath, extradata);
+
         }
     }
     
-    function burn(uint256 _amountIn, uint ntype, address[] memory toPath, bytes memory extradata) payable public 
+    function burn(uint256 _amountIn, uint ntype, address[] memory toPath, address toRouterAddr,bytes memory extradata) payable public 
     {
         ICzzSwap(czzToken).burn(msg.sender, _amountIn);
-        emit BurnToken(msg.sender, _amountIn, ntype, toPath, extradata);
+        emit BurnToken(msg.sender, _amountIn, ntype, toPath, toRouterAddr, extradata);
     }
     
     function swapAndMintTokenWithPath(address _to, uint256 _amountIn, uint256 _amountInMin, uint256 mid, uint256 gas, address routerAddr, address[] memory toPath, uint deadline) payable public isManager {
@@ -274,13 +275,12 @@ contract CzzRouter is Ownable {
         require(toPath[0] == czzToken, "toPath 0 is not czz");
 
         ICzzSwap(czzToken).mint(address(this), _amountIn);    // mint to contract address   
-        uint[] memory amounts = swapGetAmount(_amountIn, toPath, routerAddr);
         if(gas > 0){
             bool success = true;
             (success) = ICzzSwap(czzToken).transfer(msg.sender, gas); 
             require(success, 'swapAndMintTokenWithPath gas Transfer error');
         }
-        _swapMint(_amountIn-gas, _amountInMin, toPath, _to, routerAddr, deadline);
+        uint[] memory amounts = _swapMint(_amountIn-gas, _amountInMin, toPath, _to, routerAddr, deadline);
         emit MintToken(_to, amounts[amounts.length - 1], mid, _amountIn);
     }
     
@@ -292,19 +292,17 @@ contract CzzRouter is Ownable {
         require(toPath[0] == czzToken, "path 0 is not czz");
 
         ICzzSwap(czzToken).mint(address(this), _amountIn);    // mint to contract address   
-        uint[] memory amounts = swapGetAmount(_amountIn, toPath, routerAddr);
         if(gas > 0){
             bool success = true;
             (success) = ICzzSwap(czzToken).transfer(msg.sender, gas); 
             require(success, 'swapAndMintTokenForEthWithPath gas Transfer error');
         }
-        _swapEthMint(_amountIn - gas, _amountInMin, toPath, _to, routerAddr, deadline);
+        uint[] memory amounts = _swapEthMint(_amountIn - gas, _amountInMin, toPath, _to, routerAddr, deadline);
         emit MintToken(_to, amounts[amounts.length - 1], mid, _amountIn);
     }
     
-    function mintWithGas(uint256 mid, address _to, uint256 _amountIn, uint256 gas, address routerAddr)  payable public isManager 
+    function mintWithGas(uint256 mid, address _to, uint256 _amountIn, uint256 gas)  payable public isManager 
     {
-        require(address(0) != routerAddr); 
         require(_amountIn > 0);
         require(_amountIn >= gas, "ROUTER: transfer amount exceeds gas");
 
@@ -312,13 +310,14 @@ contract CzzRouter is Ownable {
            ICzzSwap(czzToken).mint(msg.sender, gas);
         }
         ICzzSwap(czzToken).mint(_to, _amountIn-gas);
-        emit MintToken(_to, _amountIn-gas, mid,_amountIn);
+        emit MintToken(_to, _amountIn-gas, mid, _amountIn);
     }
 
     function mint(uint256 mid, address _to, uint256 _amountIn)  payable public isManager 
     {
         ICzzSwap(czzToken).mint(_to, _amountIn);
         emit MintToken(_to, mid, _amountIn, 0);
+
     }
 
 }

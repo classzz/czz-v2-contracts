@@ -100,13 +100,8 @@ contract CzzRouterForSec is Ownable {
     address czzToken;
     address czzSecurityPoolPoolAddr;
     
-    
-    uint constant MIN_SIGNATURES = 1;
-    uint minSignatures = 0;
     mapping (address => uint8) private managers;
     mapping (address => uint8) private routerAddrs;
-    mapping (uint => MintItem) private mintItems;
-    uint256[] private pendingItems;
     struct KeyFlag { address key; bool deleted; }
 
     struct MintItem {
@@ -159,7 +154,6 @@ contract CzzRouterForSec is Ownable {
     constructor(address _token, address _czzSecurityPoolPoolAddr) public {
         czzToken = _token;
         czzSecurityPoolPoolAddr = _czzSecurityPoolPoolAddr;
-        minSignatures = MIN_SIGNATURES;
     }
     
     receive() external payable {}
@@ -172,29 +166,7 @@ contract CzzRouterForSec is Ownable {
         managers[manager] = 0;
     }
 
-    function deleteItems(uint256 mid) internal isManager {
-        uint8 replace = 0;
-        for(uint i = 0; i< pendingItems.length; i++){
-            if(1==replace){
-                pendingItems[i-1] = pendingItems[i];
-            }else if(mid == pendingItems[i]){
-                replace = 1;
-            }
-        } 
-        delete pendingItems[pendingItems.length - 1];
-        // pendingItems.length--;
-        // delete mintItems[mid];
-    }
-    
-    function getItem(uint256 mid) internal view returns (uint8 ret){    //0 ok  1 error
-        for(uint i = 0; i< pendingItems.length; i++){
-            if(mid == pendingItems[i]){
-                return 0;
-            }
-        } 
-        return 1;
-    }
-    
+
     function insert_signature(MintItem storage item, address key) internal returns (bool replaced)
     {
         if (item.signatures[key] == 1)
@@ -208,14 +180,6 @@ contract CzzRouterForSec is Ownable {
             return true;
         }
     }
-    
-    function remove_signature_all(MintItem storage self) internal
-    {
-        for(uint256 i = 0; i < self.keys.length; i++){
-            address key = self.keys[i].key;
-            delete self.signatures[key];
-        }
-    }
 
     function swap_burn_get_amount(uint amountIn, address[] memory path,address routerAddr) public view returns (uint[] memory amounts){
         require(address(0) != routerAddr); 
@@ -223,98 +187,37 @@ contract CzzRouterForSec is Ownable {
     }
     
     function submitOrderWithPath(address _to, uint _amountIn, uint _amountInMin, uint256 mid, uint256 gas, address routerAddr, address[] memory userPath, uint deadline) public isManager {
-        MintItem storage item = mintItems[mid];
-        if(item.signatureCount++ == 0) {
-            require(getItem(mid) == 1, "Order exist");
-            require(address(0) != _to , "address(0) == _to");
-            require(address(0) != routerAddr , "address(0) == routerAddr"); 
-            require(address(0) != czzSecurityPoolPoolAddr , "address(0) == czzSecurityPoolPoolAddr"); 
-            require(userPath[0] == czzToken, "path 0 is not czz");
-            require(_amountIn > 0);
-            item.to = _to;
-            item.amountIn = _amountIn;
-            pendingItems.push(mid);
-            emit MintItemCreated(msg.sender, _to, _amountIn, mid);
-            item.gas = gas;
-            item.routerAddr = routerAddr;
-            item.toToken = userPath[userPath.length - 1];
-        }else{
-            require(getItem(mid) == 0, "Order do not exist");
-            require(item.to == _to , "item.to != _to");
-            require(item.routerAddr == routerAddr , "routerAddr diff"); 
-            require(address(0) != czzSecurityPoolPoolAddr , "address(0) == czzSecurityPoolPoolAddr"); 
-            require(userPath[0] == czzToken, "path 0 is not czz");
-            require(item.amountIn == _amountIn, "item.amountIn != _amountIn");
-            require(item.gas == gas, "item.gas != gas");
-        }
-        
-        if(item.signatureCount >= minSignatures)
-        {
-            //require(path[path.length - 1] == WethAddr, "last path is not weth");
-            require(item.amountIn > gas, "ROUTER: transfer amount exceeds gas");
-            if(item.gas > 0){
-                ICzzSecurityPoolSwapPool(czzSecurityPoolPoolAddr).securityPoolTransferGas(0, item.gas, czzToken, msg.sender);
-            }
+     
+        require(address(0) != _to , "address(0) == _to");
+        require(address(0) != routerAddr , "address(0) == routerAddr"); 
+        require(address(0) != czzSecurityPoolPoolAddr , "address(0) == czzSecurityPoolPoolAddr"); 
+        require(userPath[0] == czzToken, "path 0 is not czz");
+        require(_amountIn > 0);
 
-            uint[] memory amounts = ICzzSecurityPoolSwapPool(czzSecurityPoolPoolAddr).securityPoolSwap(0, item.amountIn, _amountInMin, userPath, item.gas, item.to, routerAddr, deadline);
-            item.amount = amounts[amounts.length - 1];
-            item.submitOrderEn = 1;
-            emit SubmitOrder(item.to, item.amount, mid, item.amountIn);
-        
-            remove_signature_all(item);
-            deleteItems(mid);
-            delete mintItems[mid];
-            return;
+        if(gas > 0){
+            ICzzSecurityPoolSwapPool(czzSecurityPoolPoolAddr).securityPoolTransferGas(0, gas, czzToken, msg.sender);
         }
-        mintItems[mid] = item;
+
+        uint[] memory amounts = ICzzSecurityPoolSwapPool(czzSecurityPoolPoolAddr).securityPoolSwap(0, _amountIn, _amountInMin, userPath, gas, _to, routerAddr, deadline);
+        emit SubmitOrder(_to, amounts[amounts.length - 1], mid, _amountIn);
+    
     }
 
     function submitOrderEthWithPath(address _to, uint _amountIn, uint _amountInMin, uint256 mid, uint256 gas, address routerAddr, address[] memory userPath, uint deadline) public isManager {
         
-        MintItem storage item = mintItems[mid];
-        if(item.signatureCount++ == 0) {
-            require(getItem(mid) == 1, "Order exist");
             require(address(0) != _to , "address(0) == _to");
             require(address(0) != routerAddr , "address(0) == routerAddr"); 
             require(address(0) != czzSecurityPoolPoolAddr , "address(0) == czzSecurityPoolPoolAddr"); 
             require(userPath[0] == czzToken, "path 0 is not czz");
             require(_amountIn > 0);
-            item.to = _to;
-            item.amountIn = _amountIn;
-            pendingItems.push(mid);
-            emit MintItemCreated(msg.sender, _to, _amountIn, mid);
-            item.gas = gas;
-            item.routerAddr = routerAddr;
-            item.toToken = userPath[userPath.length - 1];
-        }else{
-            require(getItem(mid) == 0, "Order do not exist");
-            require(item.to == _to , "item.to != _to");
-            require(item.routerAddr == routerAddr , "address(0) != routerAddr"); 
-            require(address(0) != czzSecurityPoolPoolAddr , "address(0) == czzSecurityPoolPoolAddr"); 
-            require(userPath[0] == czzToken, "path 0 is not czz");
-            require(item.amountIn == _amountIn, "item.amountIn != _amountIn");
-            require(item.gas == gas, "item.gas != gas");
-        }
-        
-        if(item.signatureCount >= minSignatures)
-        {
-            //require(path[path.length - 1] == WethAddr, "last path is not weth");
-            require(item.amountIn > gas, "ROUTER: transfer amount exceeds gas");
-            if(item.gas > 0){
-                ICzzSecurityPoolSwapPool(czzSecurityPoolPoolAddr).securityPoolTransferGas(0, item.gas, czzToken, msg.sender);
+            require(_amountIn > gas, "ROUTER: transfer amount exceeds gas");
+            
+            if(gas > 0){
+                ICzzSecurityPoolSwapPool(czzSecurityPoolPoolAddr).securityPoolTransferGas(0, gas, czzToken, msg.sender);
             }
 
-            uint[] memory amounts = ICzzSecurityPoolSwapPool(czzSecurityPoolPoolAddr).securityPoolSwapEth(0, item.amountIn, _amountInMin, userPath, item.gas, item.to, routerAddr, deadline);
-            item.amount = amounts[amounts.length - 1];
-            item.submitOrderEn = 1;
-            emit SubmitOrder(item.to, item.amount, mid, item.amountIn);
-            remove_signature_all(item);
-            deleteItems(mid);
-            delete mintItems[mid];
-            return;
-
-        }
-        mintItems[mid] = item;
+            uint[] memory amounts = ICzzSecurityPoolSwapPool(czzSecurityPoolPoolAddr).securityPoolSwapEth(0, _amountIn, _amountInMin, userPath, gas, _to, routerAddr, deadline);
+            emit SubmitOrder(_to, amounts[amounts.length - 1], mid, _amountIn);
     }
 
     function mintAndRepayment(uint amount) public isManager {
@@ -322,14 +225,6 @@ contract CzzRouterForSec is Ownable {
         ICzzSecurityPoolSwapPool(czzSecurityPoolPoolAddr).securityPoolMint(0, amount, czzToken);    // mint to contract address        
         emit MintToken(czzSecurityPoolPoolAddr, amount, 0, amount);  
     }   
-
-    function setMinSignatures(uint8 value) public isManager {
-        minSignatures = value;
-    }
-
-    function getMinSignatures() public view isManager returns(uint256){
-        return minSignatures;
-    }
 
     function setCzzTonkenAddress(address addr) public isManager {
         czzToken = addr;
