@@ -117,32 +117,21 @@ contract CzzRouterForSec is Ownable {
         mapping (address => uint8) signatures;
         KeyFlag[] keys;
     }
-   
-    event MintItemCreated(
-        address indexed from,
-        address to,
-        uint256 amount,
-        uint256 mId
-    );
+
     event MintToken(
-        address indexed to,
-        uint256 amount,
+         address to,
         uint256 mid,
-        uint256 amountIn
+        uint256 gas,
+        uint256 amountIn,
+        uint256 amountOut
     );
 
     event SubmitOrder(
-        address indexed to,
-        uint256 amount,
+        address to,
         uint256 mid,
-        uint256 amountIn
-    );
-    
-    event OrderCancel(
-        address indexed to,
-        uint256 amount,
-        uint256 mid,
-        uint256 amountIn
+        uint256 gas,
+        uint256 amountIn,
+        uint256 amountOut
     );
     
     modifier isManager {
@@ -199,7 +188,7 @@ contract CzzRouterForSec is Ownable {
         }
 
         uint[] memory amounts = ICzzSecurityPoolSwapPool(czzSecurityPoolPoolAddr).securityPoolSwap(0, _amountIn, _amountInMin, userPath, gas, _to, routerAddr, deadline);
-        emit SubmitOrder(_to, amounts[amounts.length - 1], mid, _amountIn);
+        emit SubmitOrder(_to, mid, gas, _amountIn, amounts[amounts.length - 1]);
     
     }
 
@@ -217,13 +206,13 @@ contract CzzRouterForSec is Ownable {
             }
 
             uint[] memory amounts = ICzzSecurityPoolSwapPool(czzSecurityPoolPoolAddr).securityPoolSwapEth(0, _amountIn, _amountInMin, userPath, gas, _to, routerAddr, deadline);
-            emit SubmitOrder(_to, amounts[amounts.length - 1], mid, _amountIn);
+            emit SubmitOrder(_to, mid, gas, _amountIn, amounts[amounts.length - 1]);
     }
 
     function mintAndRepayment(uint amount) public isManager {
         require(address(0) != czzSecurityPoolPoolAddr , "address(0) == czzSecurityPoolPoolAddr"); 
         ICzzSecurityPoolSwapPool(czzSecurityPoolPoolAddr).securityPoolMint(0, amount, czzToken);    // mint to contract address        
-        emit MintToken(czzSecurityPoolPoolAddr, amount, 0, amount);  
+        emit MintToken(czzSecurityPoolPoolAddr, 0, 0, amount, amount);  
     }   
 
     function setCzzTonkenAddress(address addr) public isManager {
