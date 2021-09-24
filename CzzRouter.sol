@@ -263,7 +263,7 @@ contract CzzRouter is Ownable {
     function burn(uint256 _amountIn, uint convertType, address[] memory toPath, address toRouterAddr, uint slippage, bool isInsurance, bytes memory extradata) payable public 
     {
         ICzzSwap(czzToken).burn(msg.sender, _amountIn);
-        emit BurnToken(msg.sender, _amountIn, 0, convertType, toPath, toRouterAddr, slippage, isInsurance, extradata);
+        emit BurnToken(msg.sender, _amountIn, _amountIn, convertType, toPath, toRouterAddr, slippage, isInsurance, extradata);
     }
     
     function swapAndMintTokenWithPath(address _to, uint256 _amountIn, uint256 _amountInMin, uint256 mid, uint256 gas, address routerAddr, address[] memory toPath, uint deadline) payable public isManager {
