@@ -97,3 +97,20 @@ routersec:
 scepool:
 0x0929e604c4Cdd5361D2037D5b70c44477C0ca3F2
 
+
+
+``````````````````````````````````````````
+okchain mainnet:
+token:
+0x2Fb9376cFf6fb7f5fe99665aE1Ec2FdDD5099134
+router:
+0x007c98F9f2c70746a64572E67FBCc41a2b8bba18
+
+
+
+``````````````````````````````````````````
+matic mainnet:
+token:
+0x2Fb9376cFf6fb7f5fe99665aE1Ec2FdDD5099134
+router:
+0xa4f9ba054bA5B0ff7793A21924d2782A221680B0
