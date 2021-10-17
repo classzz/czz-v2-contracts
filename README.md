@@ -111,6 +111,6 @@ router:
 ``````````````````````````````````````````
 matic mainnet:
 token:
-0x2Fb9376cFf6fb7f5fe99665aE1Ec2FdDD5099134
+0x9aFe6f40401509FbEc3ac261416052e9d416a3F2
 router:
-0xa4f9ba054bA5B0ff7793A21924d2782A221680B0
+0xdf10e0Caa2BBe67f7a1E91A3e6660cC1e34e81B9
