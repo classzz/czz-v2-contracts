@@ -199,45 +199,46 @@ initcode:
 0xe18a34eb0e04b04f7a0ac29a6e80748dca96319b42c54d679cb821dca90c6303 
 ```
 
-
 # Router function
 
 ## approve
+
 ```
 Authorization to router tokens
     function approve(address spender, uint256 amount) public virtual override returns (bool) 
 
 contact address：
-	token address
+    token address
 
 param：
-	spender： router address
-	amount： allow swap amount
+    spender： router address
+    amount： allow swap amount
 ```
 
 ## swapAndBurnWithPath
+
 ```
 swapAndBurnWithPath:  Token swap for token and burn czz for cross mainnet
 
-	function swapAndBurnWithPath(uint256 _amountIn, uint256 _amountInMin, uint convertType, address routerAddr, address[] memory fromPath, uint deadline, address[] memory toPath, address toRouterAddr, uint slippage, bool isInsurance, bytes memory extradata) payable public
-	
+    function swapAndBurnWithPath(uint256 _amountIn, uint256 _amountInMin, uint convertType, address routerAddr, address[] memory fromPath, uint deadline, address[] memory toPath, address toRouterAddr, uint slippage, bool isInsurance, bytes memory extradata) payable public
+
 
 contact address:
-	router
+    router
 
 param:
-	_amountIn: The amount of token to transfer
-	
-	_amountInMin： The minimum amount of tokens to be transferred
-	
-	convertType:   0：czz  1: eth  2: heco  3: bsc  4: oec  5: matic
-	
+    _amountIn: The amount of token to transfer
+
+    _amountInMin： The minimum amount of tokens to be transferred
+
+    convertType:   0：czz  1: eth  2: heco  3: bsc  4: oec  5: matic
+
     routerAddr: swap address
 
     fromPath: Swap Path of another token. The last address of the path should be CZZ
 
-	deadline: Swap before this time expires
-	
+    deadline: Swap before this time expires
+
     toRouterAddr: Router address of the destination network, or any router address if you want to change the destination network CZZ
 
     toPath: Path of the destination network swap. The first address of the path should be the CZZ address
@@ -248,10 +249,10 @@ param:
 
     extradata: Extension field
 
-```	
-
+```
 
 ## swapAndBurnEthWithPath
+
 ```
 
 swapAndBurnWithPath:  Token swap for token and burn czz for cross mainnet
@@ -260,20 +261,20 @@ function swapAndBurnEthWithPath(uint256 _amountInMin, uint convertType, address 
 
 
 Token address:
-	router
+    router
 
 param:
-	
-	_amountInMin The minimum amount of tokens to be transferred
-	
-	convertType:   0：czz  1: eth  2: heco  3: bsc  4: oec  5: matic
-	
+
+    _amountInMin The minimum amount of tokens to be transferred
+
+    convertType:   0：czz  1: eth  2: heco  3: bsc  4: oec  5: matic
+
     routerAddr: swap address
 
     path: The swap operation path of other token burning coins. The first path should be weth, and the last address should be CZZ
 
-	deadline: Swap before this time expires
-	
+    deadline: Swap before this time expires
+
     toRouterAddr: Router address of the destination network, or any router address if you want to change the destination network CZZ
 
     toPath: Path of the destination network swap. The first address of the path should be the CZZ address
