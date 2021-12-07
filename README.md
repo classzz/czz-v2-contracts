@@ -180,7 +180,7 @@ initcode:
 
 
 
-## matic
+## polygon
 ```
 token:
 0x9aFe6f40401509FbEc3ac261416052e9d416a3F2
