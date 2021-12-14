@@ -199,6 +199,28 @@ initcode:
 0xe18a34eb0e04b04f7a0ac29a6e80748dca96319b42c54d679cb821dca90c6303 
 ```
 
+## metis
+```
+token: 
+0x2Fb9376cFf6fb7f5fe99665aE1Ec2FdDD5099134
+router: 
+0x007c98F9f2c70746a64572E67FBCc41a2b8bba18
+
+
+sushi:
+factory:
+0xc35dadb65012ec5796536bd9864ed8773abc74c4
+router: 
+0x1b02dA8Cb0d097eB8D57A175b88c7D8b47997506
+wmatic:
+0x0d500b1d8e8ef31e21c99d1db9a6444d3adf1270
+initcode:
+0xe18a34eb0e04b04f7a0ac29a6e80748dca96319b42c54d679cb821dca90c6303 
+```
+
+metis mainnet :
+
+
 # Router function
 
 ## approve
