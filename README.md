@@ -207,19 +207,33 @@ router:
 0x007c98F9f2c70746a64572E67FBCc41a2b8bba18
 
 
-sushi:
+netswap:
 factory:
-0xc35dadb65012ec5796536bd9864ed8773abc74c4
+0x70f51d68D16e8f9e418441280342BD43AC9Dff9f
 router: 
-0x1b02dA8Cb0d097eB8D57A175b88c7D8b47997506
-wmatic:
-0x0d500b1d8e8ef31e21c99d1db9a6444d3adf1270
+0x1E876cCe41B7b844FDe09E38Fa1cf00f213bFf56
+wmetis:
+0xdeaddeaddeaddeaddeaddeaddeaddeaddead0000
 initcode:
-0xe18a34eb0e04b04f7a0ac29a6e80748dca96319b42c54d679cb821dca90c6303 
+0x966d65068a6a30f10fd1fa814258637a34e059081d79daa94f3e2b6cec48e810 
 ```
 
-metis mainnet :
+## gate
+```
+token: 
+0xa4f9ba054bA5B0ff7793A21924d2782A221680B0
+router: 
+0x503C5C292CD5300E4006c447A46DEab216a54fb2
 
+gateswap:
+factory:
+0x98f7e29fc0Be0d4e6666972EAFB605155C8Fb8B5
+router: 
+0xF04c414d736c4bb4B7fC32843c6d35f9a9A8b216
+wgt:
+0x672f30407A71fa8737A3A14474ff37E09c7Fc44a
+initcode:
+```
 
 # Router function
 
