@@ -267,7 +267,7 @@ param:
 
     _amountInMin： The minimum amount of tokens to be transferred
 
-    convertType:   0：czz  1: eth  2: heco  3: bsc  4: oec  5: matic
+    convertType:   0：czz  1: eth  2: heco  3: bsc  4: oec  5: matic  6: metis  7: gate
 
     routerAddr: swap address
 
@@ -303,7 +303,7 @@ param:
 
     _amountInMin The minimum amount of tokens to be transferred
 
-    convertType:   0：czz  1: eth  2: heco  3: bsc  4: oec  5: matic
+    convertType:   0：czz  1: eth  2: heco  3: bsc  4: oec  5: matic 6: metis  7: gate
 
     routerAddr: swap address
 
